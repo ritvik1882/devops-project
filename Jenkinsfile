@@ -2,17 +2,15 @@ pipeline {
     agent any
 
     environment {
-        // Define environment variables
-        IMAGE_NAME = 'devops-blog-app'
-        CONTAINER_NAME = 'devops-demo'
-        HOST_PORT = '8080'
+        IMAGE_NAME = 'blog-app-image'
+        CONTAINER_NAME = 'blog-app'
+        HOST_PORT = '5000'
         CONTAINER_PORT = '3000'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // This command tells Jenkins to clone the Github repository linked in the GUI
                 checkout scm
                 echo "Code checked out from GitHub successfully!"
             }
