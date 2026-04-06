@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Post - DevOps Blog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .EasyMDEContainer .CodeMirror {
+            border-radius: 0.5rem;
+            border-color: #e5e7eb;
+            font-family: inherit;
+        }
+        .editor-toolbar {
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+            border-color: #e5e7eb;
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <nav class="bg-white shadow-md border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="/" class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                        Blog Sphere
+                    </a>
+                </div>
+                <div>
+                    <a href="/" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-full shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                        Back to Posts
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="px-8 py-10">
+                <h1 class="text-3xl font-extrabold text-gray-900 mb-8">Create a New Post</h1>
+                
+                <form id="create-post-form" class="space-y-6">
+                    <div>
+                        <label for="title" class="block text-sm font-semibold text-gray-700">Post Title</label>
+                        <input type="text" id="title" name="title" required class="mt-2 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out" placeholder="Enter title">
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                            <label for="author" class="block text-sm font-semibold text-gray-700">Author Name</label>
+                            <input type="text" id="author" name="author" required class="mt-2 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out">
+                        </div>
+
+                        <div>
+                            <label for="coverImage" class="block text-sm font-semibold text-gray-700">Cover Image URL (Optional)</label>
+                            <input type="url" id="coverImage" name="coverImage" class="mt-2 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out" placeholder="https://example.com/image.jpg">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="content" class="block text-sm font-semibold text-gray-700 mb-2">Content</label>
+                        <textarea id="content" name="content"></textarea>
+                    </div>
+
+                    <div id="error-message" class="hidden rounded-md bg-red-50 p-4">
+                        <div class="flex">
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800" id="error-text">An error occurred</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" id="submit-btn" class="inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-base font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                            Publish Post
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script src="/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initEditor();
+            document.getElementById('create-post-form').addEventListener('submit', handleCreatePost);
+        });
+    </script>
+</body>
+</html>
