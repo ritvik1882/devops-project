@@ -1,3 +1,6 @@
+7ec0f3a3c9a447359c2ed7c0f904acf5
+http://localhost:8080/
+
 pipeline {
     agent any
 
@@ -12,15 +15,15 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // This command tells Jenkins to clone the Github repository linked in the GUI
-                checkout scm
-                echo "Code checked out from GitHub successfully!"
+                // Checkout code from source control
+                // In a real scenario: checkout scm
+                echo "Checking out code..."
             }
         }
 
         stage('Build') {
             steps {
-                // Install backend dependencies
+                // Install backend dependencies (for testing/linting in CI if needed)
                 dir('backend') {
                     sh 'npm install'
                 }
