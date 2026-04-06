@@ -1,3 +1,6 @@
+// 7ec0f3a3c9a447359c2ed7c0f904acf5
+// http://localhost:8080/
+
 pipeline {
     agent any
 
@@ -13,16 +16,6 @@ pipeline {
             steps {
                 checkout scm
                 echo "Code checked out from GitHub successfully!"
-            }
-        }
-
-        stage('Build') {
-            steps {
-                // Install backend dependencies
-                dir('backend') {
-                    sh 'npm install'
-                }
-                echo "Dependencies installed successfully."
             }
         }
 
