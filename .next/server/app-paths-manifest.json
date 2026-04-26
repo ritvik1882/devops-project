@@ -1,0 +1,21 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/session/[id]/route": "app/api/auth/session/[id]/route.js",
+  "/api/auth/signup/route": "app/api/auth/signup/route.js",
+  "/api/posts/[id]/comments/[commentId]/route": "app/api/posts/[id]/comments/[commentId]/route.js",
+  "/api/posts/[id]/comments/route": "app/api/posts/[id]/comments/route.js",
+  "/api/posts/[id]/route": "app/api/posts/[id]/route.js",
+  "/api/posts/route": "app/api/posts/route.js",
+  "/api/profile/[id]/route": "app/api/profile/[id]/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/drafts/page": "app/drafts/page.js",
+  "/login/page": "app/login/page.js",
+  "/my-content/page": "app/my-content/page.js",
+  "/create-post/page": "app/create-post/page.js",
+  "/page": "app/page.js",
+  "/posts/[id]/page": "app/posts/[id]/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/search/page": "app/search/page.js",
+  "/signup/page": "app/signup/page.js"
+}
