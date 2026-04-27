@@ -27,20 +27,17 @@ pipeline {
             steps {
                 echo "🐳 Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
                 sh '''
-                    # Use Jenkins home for docker build to avoid buildx permission issues.
                     DOCKER_BUILDKIT=0 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-
-                    # Use ritvik's minikube profile/context so image goes to the live cluster.
                     HOME=/home/ritvik minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
                     HOME=/home/ritvik minikube -p minikube image ls | grep ${IMAGE_NAME} || true
-                    echo "✓ Docker image built successfully"
+                    echo "Docker image built successfully"
                 '''
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo "☸️ Deploying to Minikube Kubernetes..."
+                echo "Deploying to Minikube Kubernetes..."
                 sh '''
                     export KUBECONFIG=/home/ritvik/.kube/config
                     kubectl get nodes
@@ -59,11 +56,11 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                echo "🔍 Verifying deployment..."
+                echo "Verifying deployment..."
                 sh '''
                     export KUBECONFIG=/home/ritvik/.kube/config
                     
-                    echo "========== PODS =========="
+                    echo "== PODS =="
                     kubectl get pods -l app=blog-app
                     
                     echo ""
