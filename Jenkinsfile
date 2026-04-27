@@ -25,7 +25,7 @@ pipeline {
             steps {
                 // Build the Docker image
                 echo "Building Docker Image: ${IMAGE_NAME}..."
-                sh 'docker build -t ${IMAGE_NAME} .'
+                sh '/usr/bin/docker build -t ${IMAGE_NAME} .'
             }
         }
 
@@ -33,13 +33,16 @@ pipeline {
             steps {
                 // Stop and remove existing container if it exists
                 sh '''
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
+                    /usr/bin/docker stop ${CONTAINER_NAME} || true
+                    /usr/bin/docker rm ${CONTAINER_NAME} || true
                 '''
+                
+                // Ensure data directory exists on the host
+                sh 'mkdir -p ${WORKSPACE}/data'
                 
                 // Run the new container
                 echo "Running new container on port ${HOST_PORT}..."
-                sh 'docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} --name ${CONTAINER_NAME} ${IMAGE_NAME}'
+                sh '/usr/bin/docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} -v ${WORKSPACE}/data:/app/data -e DATABASE_URL=./data/blog-sphere.sqlite -e NODE_ENV=production --name ${CONTAINER_NAME} ${IMAGE_NAME}'
             }
         }
     }

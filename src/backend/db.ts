@@ -7,8 +7,10 @@ declare global {
   var __blogSphereDb: Database.Database | undefined;
 }
 
-const DB_DIR = path.join(process.cwd(), 'data');
-const DB_PATH = path.join(DB_DIR, 'blog-sphere.sqlite');
+const DB_PATH = process.env.DATABASE_URL 
+  ? (path.isAbsolute(process.env.DATABASE_URL) ? process.env.DATABASE_URL : path.join(process.cwd(), process.env.DATABASE_URL))
+  : path.join(process.cwd(), 'data', 'blog-sphere.sqlite');
+const DB_DIR = path.dirname(DB_PATH);
 
 const initializeSchema = (db: Database.Database) => {
   db.pragma('journal_mode = WAL');

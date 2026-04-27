@@ -38,7 +38,6 @@ type CommentRow = {
   timestamp: string;
 };
 
-const SEEDED_KEY = 'seeded-v1';
 const nowIso = () => new Date().toISOString();
 const createId = () => crypto.randomUUID();
 
@@ -91,138 +90,6 @@ const toComment = (row: CommentRow): Comment => ({
   timestamp: row.timestamp,
 });
 
-const ensureSeeded = () => {
-  const db = getDb();
-  const seeded = db.prepare('SELECT value FROM meta WHERE key = ?').get(SEEDED_KEY) as
-    | { value: string }
-    | undefined;
-
-  if (seeded?.value === 'true') return;
-
-  const baseNow = Date.now();
-  const users = [
-    {
-      id: 'demo-alex',
-      name: 'Alex Rivera',
-      email: 'alex@blogsphere.local',
-      password: 'password123',
-      avatar_url: null,
-      bio: 'Writes about product design and creative workflows.',
-      created_at: new Date(baseNow - 1000 * 60 * 60 * 24 * 30).toISOString(),
-    },
-    {
-      id: 'demo-sam',
-      name: 'Sam Carter',
-      email: 'sam@blogsphere.local',
-      password: 'password123',
-      avatar_url: null,
-      bio: 'Frontend engineer sharing practical web experiments.',
-      created_at: new Date(baseNow - 1000 * 60 * 60 * 24 * 25).toISOString(),
-    },
-  ];
-
-  const posts = [
-    {
-      id: 'post-offline-1',
-      title: 'Building A Calm Offline Writing Routine',
-      excerpt: 'How I moved my writing flow to an always-available offline stack.',
-      content:
-        'Offline-first writing changed how quickly I can move from idea to draft.\\n\\n- I keep a weekly note queue.\\n- I expand one note into a post every morning.\\n- I publish when the piece feels useful, not perfect.',
-      author_id: 'demo-alex',
-      status: 'published',
-      timestamp: new Date(baseNow - 1000 * 60 * 60 * 36).toISOString(),
-      categories: JSON.stringify(['Productivity', 'Writing']),
-      tags: JSON.stringify(['offline', 'workflow', 'writing']),
-      image_url: null,
-    },
-    {
-      id: 'post-offline-2',
-      title: 'A Tiny UI Checklist For Better Readability',
-      excerpt: 'Three fast checks I run before shipping any content-heavy page.',
-      content:
-        'When readability is good, users stay longer and understand more.\\n\\n1. Raise line-height on long paragraphs.\\n2. Keep headline rhythm consistent.\\n3. Use muted color only for secondary text.',
-      author_id: 'demo-sam',
-      status: 'published',
-      timestamp: new Date(baseNow - 1000 * 60 * 60 * 12).toISOString(),
-      categories: JSON.stringify(['Frontend']),
-      tags: JSON.stringify(['ui', 'accessibility', 'typography']),
-      image_url: null,
-    },
-    {
-      id: 'post-offline-draft-1',
-      title: 'Draft: Better Comment Moderation Patterns',
-      excerpt: 'Notes for a future article about low-friction moderation.',
-      content: 'Outline:\\n\\n- moderation cues\\n- local-first tooling\\n- transparent actions',
-      author_id: 'demo-alex',
-      status: 'draft',
-      timestamp: new Date(baseNow - 1000 * 60 * 60 * 4).toISOString(),
-      categories: JSON.stringify(['Community']),
-      tags: JSON.stringify(['moderation', 'comments']),
-      image_url: null,
-    },
-  ] as const;
-
-  const comments = [
-    {
-      id: 'comment-1',
-      post_id: 'post-offline-1',
-      user_id: 'demo-sam',
-      user_name: 'Sam Carter',
-      user_avatar_url: null,
-      content: 'Love this. The note queue idea is easy to start today.',
-      timestamp: new Date(baseNow - 1000 * 60 * 60 * 20).toISOString(),
-    },
-    {
-      id: 'comment-2',
-      post_id: 'post-offline-1',
-      user_id: 'demo-alex',
-      user_name: 'Alex Rivera',
-      user_avatar_url: null,
-      content: 'Thanks, Sam. I am also testing a monthly review format.',
-      timestamp: new Date(baseNow - 1000 * 60 * 60 * 10).toISOString(),
-    },
-    {
-      id: 'comment-3',
-      post_id: 'post-offline-2',
-      user_id: 'demo-alex',
-      user_name: 'Alex Rivera',
-      user_avatar_url: null,
-      content: 'Good checklist. The muted-text rule avoids so many contrast issues.',
-      timestamp: new Date(baseNow - 1000 * 60 * 60 * 3).toISOString(),
-    },
-  ] as const;
-
-  const tx = db.transaction(() => {
-    const insertUser = db.prepare(
-      `INSERT OR REPLACE INTO users (id, name, email, password, avatar_url, bio, created_at)
-       VALUES (@id, @name, @email, @password, @avatar_url, @bio, @created_at)`
-    );
-    const insertPost = db.prepare(
-      `INSERT OR REPLACE INTO posts (id, title, excerpt, content, author_id, status, timestamp, categories, tags, image_url, comment_count)
-       VALUES (@id, @title, @excerpt, @content, @author_id, @status, @timestamp, @categories, @tags, @image_url, 0)`
-    );
-    const insertComment = db.prepare(
-      `INSERT OR REPLACE INTO comments (id, post_id, user_id, user_name, user_avatar_url, content, timestamp)
-       VALUES (@id, @post_id, @user_id, @user_name, @user_avatar_url, @content, @timestamp)`
-    );
-
-    users.forEach((user) => insertUser.run(user));
-    posts.forEach((post) => insertPost.run(post));
-    comments.forEach((comment) => insertComment.run(comment));
-
-    db.prepare(
-      `UPDATE posts
-       SET comment_count = (
-         SELECT COUNT(*) FROM comments c WHERE c.post_id = posts.id
-       )`
-    ).run();
-
-    db.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run(SEEDED_KEY, 'true');
-  });
-
-  tx();
-};
-
 const getPostSelect = () => `
   SELECT
     p.id,
@@ -243,11 +110,8 @@ const getPostSelect = () => `
   LEFT JOIN users u ON u.id = p.author_id
 `;
 
-ensureSeeded();
-
 export const blogService = {
   getUserById(userId: string): AuthenticatedUser | null {
-    ensureSeeded();
     const db = getDb();
     const row = db
       .prepare('SELECT id, name, email, avatar_url, bio, password FROM users WHERE id = ?')
@@ -256,7 +120,6 @@ export const blogService = {
   },
 
   loginWithEmail(email: string, pass: string): AuthenticatedUser {
-    ensureSeeded();
     const db = getDb();
     const row = db
       .prepare('SELECT id, name, email, avatar_url, bio, password FROM users WHERE email = ?')
@@ -270,7 +133,6 @@ export const blogService = {
   },
 
   signup(details: { name: string; email: string; pass: string }): AuthenticatedUser {
-    ensureSeeded();
     const db = getDb();
     const normalizedEmail = details.email.toLowerCase().trim();
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail) as
@@ -294,7 +156,6 @@ export const blogService = {
     userId: string,
     updates: { name?: string; bio?: string; avatarUrl?: string; email?: string }
   ): AuthenticatedUser {
-    ensureSeeded();
     const db = getDb();
     const existing = db
       .prepare('SELECT id, name, email, avatar_url, bio, password FROM users WHERE id = ?')
@@ -328,7 +189,6 @@ export const blogService = {
   },
 
   getAllPosts(filters?: { authorId?: string; status?: 'published' | 'draft' }): Post[] {
-    ensureSeeded();
     const db = getDb();
 
     const where: string[] = [];
@@ -353,7 +213,6 @@ export const blogService = {
   },
 
   getPostById(postId: string): Post | undefined {
-    ensureSeeded();
     const db = getDb();
     const row = db
       .prepare(`${getPostSelect()} WHERE p.id = ? LIMIT 1`)
@@ -363,7 +222,6 @@ export const blogService = {
   },
 
   addPost(postData: NewPostData, author: AuthenticatedUser): Post {
-    ensureSeeded();
     const db = getDb();
     const postId = createId();
 
@@ -387,7 +245,6 @@ export const blogService = {
   },
 
   updatePost(postData: UpdatePostData): Post | undefined {
-    ensureSeeded();
     const db = getDb();
     const existing = this.getPostById(postData.id);
     if (!existing) return undefined;
@@ -420,7 +277,6 @@ export const blogService = {
   },
 
   deletePost(postId: string): void {
-    ensureSeeded();
     const db = getDb();
 
     const tx = db.transaction(() => {
@@ -432,7 +288,6 @@ export const blogService = {
   },
 
   getCommentsByPostId(postId: string): Comment[] {
-    ensureSeeded();
     const db = getDb();
     const rows = db
       .prepare(
@@ -447,7 +302,6 @@ export const blogService = {
   },
 
   addComment(data: NewCommentData, user: AuthenticatedUser): Comment {
-    ensureSeeded();
     const db = getDb();
     const commentId = createId();
 
@@ -474,7 +328,6 @@ export const blogService = {
   },
 
   deleteComment(postId: string, commentId: string): void {
-    ensureSeeded();
     const db = getDb();
 
     const tx = db.transaction(() => {
