@@ -1,3 +1,6 @@
+Port forward NodePort:
+kubectl port-forward service/blog-app-service 8000:80
+
 Jenkins admin pass: 7ec0f3a3c9a447359c2ed7c0f904acf5
 Jenkins address: http://localhost:8080/
 
