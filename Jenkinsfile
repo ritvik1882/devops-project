@@ -31,8 +31,8 @@ pipeline {
                 echo "Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
                 sh '''
                     DOCKER_BUILDKIT=0 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                    sudo HOME=/home/ritvik minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
-                    sudo HOME=/home/ritvik minikube -p minikube image ls | grep ${IMAGE_NAME} || true
+                    HOME=/home/ritvik minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
+                   =/home/ritvik minikube -p minikube image ls | grep ${IMAGE_NAME} || true
                     echo "Docker image built successfully"
                 '''
             }
