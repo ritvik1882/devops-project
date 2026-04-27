@@ -40,8 +40,14 @@ pipeline {
             steps {
                 echo "Building Docker image directly in Minikube..."
                 sh '''
-                    minikube -p minikube image build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .
-                    minikube -p minikube image ls | grep ${IMAGE_NAME}
+                    set -e
+                    # Build once as latest, then add deterministic rollout tags.
+                    minikube -p minikube image build -t ${IMAGE_NAME}:latest -t docker.io/library/${IMAGE_NAME}:latest .
+                    minikube -p minikube image tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${IMAGE_TAG}
+                    minikube -p minikube image tag ${IMAGE_NAME}:latest docker.io/library/${IMAGE_NAME}:${IMAGE_TAG}
+
+                    # Ensure rollout tag exists in the node runtime before deploy.
+                    minikube -p minikube image ls | grep -E "${IMAGE_NAME}:latest|${IMAGE_NAME}:${IMAGE_TAG}"
                 '''
             }
         }
@@ -61,7 +67,7 @@ pipeline {
                 echo "Updating deployment image and verifying rollout..."
                 sh '''
                     set -e
-                    minikube -p minikube kubectl -- set image deployment/blog-app blog-app=${IMAGE_NAME}:${IMAGE_TAG} -n ${K8S_NAMESPACE}
+                    minikube -p minikube kubectl -- set image deployment/blog-app blog-app=docker.io/library/${IMAGE_NAME}:${IMAGE_TAG} -n ${K8S_NAMESPACE}
                     set +e
                     minikube -p minikube kubectl -- rollout status deployment/blog-app -n ${K8S_NAMESPACE} --timeout=240s
                     ROLLOUT_EXIT=$?
@@ -73,6 +79,11 @@ pipeline {
                         minikube -p minikube kubectl -- get rs -n ${K8S_NAMESPACE} || true
                         minikube -p minikube kubectl -- get pods -n ${K8S_NAMESPACE} -l app=blog-app -o wide || true
                         minikube -p minikube kubectl -- describe deployment blog-app -n ${K8S_NAMESPACE} || true
+                        POD_NAME=$(minikube -p minikube kubectl -- get pods -n ${K8S_NAMESPACE} -l app=blog-app -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+                        if [ -n "${POD_NAME}" ]; then
+                            minikube -p minikube kubectl -- describe pod "${POD_NAME}" -n ${K8S_NAMESPACE} || true
+                            minikube -p minikube kubectl -- get events -n ${K8S_NAMESPACE} --sort-by=.metadata.creationTimestamp | tail -n 30 || true
+                        fi
 
                         echo "Attempting one-time recovery for single-replica rollout..."
                         minikube -p minikube kubectl -- delete pod -n ${K8S_NAMESPACE} -l app=blog-app --force --grace-period=0 || true
