@@ -14,6 +14,7 @@ pipeline {
         IMAGE_NAME = 'blog-app-image'
         IMAGE_TAG = "${BUILD_NUMBER}"
         K8S_NAMESPACE = 'default'
+        MINIKUBE_HOME = '/var/lib/jenkins/.minikube'
     }
 
     stages {
@@ -28,7 +29,8 @@ pipeline {
             steps {
                 echo "Checking Minikube status and Kubernetes access..."
                 sh '''
-                    minikube -p minikube status
+                    mkdir -p ${MINIKUBE_HOME}
+                    minikube -p minikube status || minikube -p minikube start --driver=docker
                     minikube -p minikube kubectl -- get nodes
                 '''
             }
