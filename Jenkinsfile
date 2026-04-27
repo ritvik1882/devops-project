@@ -1,58 +1,93 @@
-// 7ec0f3a3c9a447359c2ed7c0f904acf5
-// http://localhost:8080/
-// sudo usermod -aG docker jenkins
-// sudo systemctl restart jenkins
-
 pipeline {
     agent any
 
     environment {
         IMAGE_NAME = 'blog-app-image'
-        CONTAINER_NAME = 'blog-app'
-        HOST_PORT = '5000'
-        CONTAINER_PORT = '3000'
+        IMAGE_TAG = 'latest'
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
 
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
-                echo "Code checked out from GitHub successfully!"
+                echo "✓ Code checked out from GitHub successfully!"
             }
         }
 
         stage('Docker Build') {
             steps {
-                // Build the Docker image
-                echo "Building Docker Image: ${IMAGE_NAME}..."
-                sh 'docker build -t ${IMAGE_NAME} .'
+                echo "🐳 Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
+                sh '''
+                    eval $(minikube docker-env) || true
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    echo "✓ Docker image built successfully"
+                '''
             }
         }
 
-        stage('Docker Run / Deploy') {
+        stage('Deploy to Kubernetes') {
             steps {
-                // Stop and remove existing container if it exists
+                echo "☸️ Deploying to Minikube Kubernetes..."
                 sh '''
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
+                    export KUBECONFIG=/var/lib/jenkins/.kube/config
+                    
+                    # Apply deployment
+                    kubectl apply -f Deployment.yaml --insecure-skip-tls-verify || \
+                    kubectl apply -f Deployment.yaml
+                    
+                    # Apply service
+                    kubectl apply -f Service.yaml --insecure-skip-tls-verify || \
+                    kubectl apply -f Service.yaml
+                    
+                    # Wait for deployment to be ready
+                    kubectl rollout status deployment/blog-app-deployment --timeout=5m --insecure-skip-tls-verify || \
+                    kubectl rollout status deployment/blog-app-deployment --timeout=5m
                 '''
+            }
+        }
 
-                // Ensure data directory exists on the host workspace
-                sh 'mkdir -p ${WORKSPACE}/data'
-                
-                // Run the new container
-                echo "Running new container on port ${HOST_PORT}..."
-                sh 'docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} -v ${WORKSPACE}/data:/app/data -e DATABASE_URL=./data/blog-sphere.sqlite -e NODE_ENV=production --name ${CONTAINER_NAME} ${IMAGE_NAME}'
+        stage('Verify Deployment') {
+            steps {
+                echo "🔍 Verifying deployment..."
+                sh '''
+                    export KUBECONFIG=/var/lib/jenkins/.kube/config
+                    
+                    echo "========== PODS =========="
+                    kubectl get pods -l app=blog-app --insecure-skip-tls-verify || \
+                    kubectl get pods -l app=blog-app
+                    
+                    echo ""
+                    echo "========== SERVICE =========="
+                    kubectl get service blog-app-service --insecure-skip-tls-verify || \
+                    kubectl get service blog-app-service
+                    
+                    echo ""
+                    echo "========== DEPLOYMENT =========="
+                    kubectl get deployment blog-app-deployment --insecure-skip-tls-verify || \
+                    kubectl get deployment blog-app-deployment
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline completed successfully! Application is running on http://localhost:${HOST_PORT}"
+            sh '''
+                export KUBECONFIG=/var/lib/jenkins/.kube/config
+                echo "✓ Pipeline completed successfully!"
+                echo ""
+                echo "========== ACCESS YOUR APPLICATION =========="
+                echo "NodePort: http://$(minikube ip):30000"
+                echo ""
+                echo "Run these commands to verify:"
+                echo "  kubectl get pods"
+                echo "  kubectl get service"
+                echo "  minikube service blog-app-service"
+            '''
         }
         failure {
-            echo "Pipeline failed. Check the logs for details."
+            echo "❌ Pipeline failed. Check the logs above for details."
         }
     }
 }
