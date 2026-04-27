@@ -27,8 +27,10 @@ pipeline {
             steps {
                 echo "🐳 Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
                 sh '''
+                    export HOME=/home/ritvik
                     docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                    minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
+                    minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
+                    minikube -p minikube image ls | grep ${IMAGE_NAME} || true
                     echo "✓ Docker image built successfully"
                 '''
             }
