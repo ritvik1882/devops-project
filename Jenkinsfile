@@ -45,6 +45,7 @@ pipeline {
                     export KUBECONFIG=/home/ritvik/.kube/config
                     kubectl get nodes
                     
+                    kubectl apply -f ${WORKSPACE}/PersistentVolumeClaim.yaml
                     kubectl apply -f ${WORKSPACE}/Deployment.yaml
                     kubectl apply -f ${WORKSPACE}/Service.yaml
                     
