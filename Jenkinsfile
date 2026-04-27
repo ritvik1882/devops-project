@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = 'blog-app-image'
         IMAGE_TAG = 'latest'
-        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+        KUBECONFIG = '/home/ritvik/.kube/config'
         DEPLOYMENT_FILE = '${WORKSPACE}/Deployment.yaml'
         SERVICE_FILE = '${WORKSPACE}/Service.yaml'
     }
@@ -38,18 +38,16 @@ pipeline {
             steps {
                 echo "☸️ Deploying to Minikube Kubernetes..."
                 sh '''
-                    export KUBECONFIG=/var/lib/jenkins/.kube/config
+                    export KUBECONFIG=/home/ritvik/.kube/config
+                    kubectl get nodes
                     
                     # Apply deployment
-                    kubectl apply -f ${WORKSPACE}/Deployment.yaml --insecure-skip-tls-verify || \
                     kubectl apply -f ${WORKSPACE}/Deployment.yaml
                     
                     # Apply service
-                    kubectl apply -f ${WORKSPACE}/Service.yaml --insecure-skip-tls-verify || \
                     kubectl apply -f ${WORKSPACE}/Service.yaml
                     
                     # Wait for deployment to be ready
-                    kubectl rollout status deployment/blog-app-deployment --timeout=5m --insecure-skip-tls-verify || \
                     kubectl rollout status deployment/blog-app-deployment --timeout=5m
                 '''
             }
@@ -59,20 +57,17 @@ pipeline {
             steps {
                 echo "🔍 Verifying deployment..."
                 sh '''
-                    export KUBECONFIG=/var/lib/jenkins/.kube/config
+                    export KUBECONFIG=/home/ritvik/.kube/config
                     
                     echo "========== PODS =========="
-                    kubectl get pods -l app=blog-app --insecure-skip-tls-verify || \
                     kubectl get pods -l app=blog-app
                     
                     echo ""
                     echo "========== SERVICE =========="
-                    kubectl get service blog-app-service --insecure-skip-tls-verify || \
                     kubectl get service blog-app-service
                     
                     echo ""
                     echo "========== DEPLOYMENT =========="
-                    kubectl get deployment blog-app-deployment --insecure-skip-tls-verify || \
                     kubectl get deployment blog-app-deployment
                 '''
             }
@@ -82,7 +77,7 @@ pipeline {
     post {
         success {
             sh '''
-                export KUBECONFIG=/var/lib/jenkins/.kube/config
+                export KUBECONFIG=/home/ritvik/.kube/config
                 echo "✓ Pipeline completed successfully!"
                 echo ""
                 echo "========== ACCESS YOUR APPLICATION =========="
