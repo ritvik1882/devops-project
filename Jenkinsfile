@@ -8,9 +8,8 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'blog-app-image'
-        CONTAINER_NAME = 'blog-app'
-        HOST_PORT = '5000'
-        CONTAINER_PORT = '3000'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        K8S_NAMESPACE = 'default'
     }
 
     stages {
@@ -21,35 +20,45 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build (Minikube Docker Daemon)') {
             steps {
-                // Build the Docker image
-                echo "Building Docker Image: ${IMAGE_NAME}..."
-                sh 'docker build -t ${IMAGE_NAME} .'
+                echo "Building Docker image in Minikube Docker daemon..."
+                sh '''
+                    eval $(minikube -p minikube docker-env)
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .
+                    docker images | grep ${IMAGE_NAME}
+                '''
             }
         }
 
-        stage('Docker Run / Deploy') {
+        stage('Kubernetes Deploy') {
             steps {
-                // Stop and remove existing container if it exists
+                echo "Applying Kubernetes manifests..."
                 sh '''
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
+                    kubectl apply -f Deployment.yaml -n ${K8S_NAMESPACE}
+                    kubectl apply -f Service.yaml -n ${K8S_NAMESPACE}
                 '''
+            }
+        }
 
-                // Ensure data directory exists on the host workspace
-                sh 'mkdir -p ${WORKSPACE}/data'
-                
-                // Run the new container
-                echo "Running new container on port ${HOST_PORT}..."
-                sh 'docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} -v ${WORKSPACE}/data:/app/data -e DATABASE_URL=./data/blog-sphere.sqlite -e NODE_ENV=production --name ${CONTAINER_NAME} ${IMAGE_NAME}'
+        stage('Update Image & Verify Rollout') {
+            steps {
+                echo "Updating deployment image and verifying rollout..."
+                sh '''
+                    kubectl set image deployment/blog-app blog-app=${IMAGE_NAME}:${IMAGE_TAG} -n ${K8S_NAMESPACE}
+                    kubectl rollout status deployment/blog-app -n ${K8S_NAMESPACE} --timeout=180s
+                    kubectl get pods -n ${K8S_NAMESPACE}
+                    kubectl get services -n ${K8S_NAMESPACE}
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline completed successfully! Application is running on http://localhost:${HOST_PORT}"
+            echo "Pipeline completed successfully!"
+            echo "Validate with: kubectl get pods && kubectl get services"
+            echo "Open app URL with: minikube service blog-app-service --url"
         }
         failure {
             echo "Pipeline failed. Check the logs for details."
