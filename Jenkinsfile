@@ -1,4 +1,4 @@
-// start docker desktop
+// start jenkins and docker desktop
 // minikube start --driver=docker
 
 pipeline {
@@ -7,7 +7,6 @@ pipeline {
     environment {
         IMAGE_NAME = 'blog-app-image'
         IMAGE_TAG = 'latest'
-        KUBECONFIG = '/home/ritvik/.kube/config'
         DEPLOYMENT_FILE = '${WORKSPACE}/Deployment.yaml'
         SERVICE_FILE = '${WORKSPACE}/Service.yaml'
     }
@@ -31,8 +30,10 @@ pipeline {
                 echo "Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
                 sh '''
                     DOCKER_BUILDKIT=0 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                    HOME=/home/ritvik minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
-                   =/home/ritvik minikube -p minikube image ls | grep ${IMAGE_NAME} || true
+                    export HOME=${WORKSPACE}/.jenkins-home
+                    mkdir -p "$HOME/.kube"
+                    minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
+                    minikube -p minikube image ls | grep ${IMAGE_NAME} || true
                     echo "Docker image built successfully"
                 '''
             }
@@ -42,7 +43,9 @@ pipeline {
             steps {
                 echo "Deploying to Minikube Kubernetes..."
                 sh '''
-                    export KUBECONFIG=/home/ritvik/.kube/config
+                    export HOME=${WORKSPACE}/.jenkins-home
+                    mkdir -p "$HOME/.kube"
+                    export KUBECONFIG="$HOME/.kube/config"
                     kubectl get nodes
                     
                     kubectl apply -f ${WORKSPACE}/PersistentVolumeClaim.yaml
@@ -58,7 +61,9 @@ pipeline {
             steps {
                 echo "Verifying deployment..."
                 sh '''
-                    export KUBECONFIG=/home/ritvik/.kube/config
+                    export HOME=${WORKSPACE}/.jenkins-home
+                    mkdir -p "$HOME/.kube"
+                    export KUBECONFIG="$HOME/.kube/config"
                     
                     echo "== PODS =="
                     kubectl get pods -l app=blog-app
@@ -76,7 +81,9 @@ pipeline {
     post {
         success {
             sh '''
-                export KUBECONFIG=/home/ritvik/.kube/config
+                export HOME=${WORKSPACE}/.jenkins-home
+                mkdir -p "$HOME/.kube"
+                export KUBECONFIG="$HOME/.kube/config"
                 echo "Pipeline completed successfully!"
             '''
         }
