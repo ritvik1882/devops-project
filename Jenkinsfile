@@ -1,3 +1,6 @@
+// start docker desktop
+// minikube start --driver=docker
+
 pipeline {
     agent any
 
@@ -28,8 +31,8 @@ pipeline {
                 echo "Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
                 sh '''
                     DOCKER_BUILDKIT=0 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                    HOME=/home/ritvik minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
-                    HOME=/home/ritvik minikube -p minikube image ls | grep ${IMAGE_NAME} || true
+                    sudo HOME=/home/ritvik minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
+                    sudo HOME=/home/ritvik minikube -p minikube image ls | grep ${IMAGE_NAME} || true
                     echo "Docker image built successfully"
                 '''
             }
@@ -81,3 +84,8 @@ pipeline {
         }
     }
 }
+
+// Verify and run:
+// kubectl get pods
+// kubectl get service
+// kubectl port-forward service/blog-app-service 8000:80
