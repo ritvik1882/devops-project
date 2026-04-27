@@ -60,8 +60,25 @@ pipeline {
             steps {
                 echo "Updating deployment image and verifying rollout..."
                 sh '''
+                    set -e
                     minikube -p minikube kubectl -- set image deployment/blog-app blog-app=${IMAGE_NAME}:${IMAGE_TAG} -n ${K8S_NAMESPACE}
-                    minikube -p minikube kubectl -- rollout status deployment/blog-app -n ${K8S_NAMESPACE} --timeout=180s
+                    set +e
+                    minikube -p minikube kubectl -- rollout status deployment/blog-app -n ${K8S_NAMESPACE} --timeout=240s
+                    ROLLOUT_EXIT=$?
+                    set -e
+
+                    if [ ${ROLLOUT_EXIT} -ne 0 ]; then
+                        echo "Rollout timed out. Collecting diagnostics..."
+                        minikube -p minikube kubectl -- get deployment blog-app -n ${K8S_NAMESPACE} -o wide || true
+                        minikube -p minikube kubectl -- get rs -n ${K8S_NAMESPACE} || true
+                        minikube -p minikube kubectl -- get pods -n ${K8S_NAMESPACE} -l app=blog-app -o wide || true
+                        minikube -p minikube kubectl -- describe deployment blog-app -n ${K8S_NAMESPACE} || true
+
+                        echo "Attempting one-time recovery for single-replica rollout..."
+                        minikube -p minikube kubectl -- delete pod -n ${K8S_NAMESPACE} -l app=blog-app --force --grace-period=0 || true
+                        minikube -p minikube kubectl -- rollout status deployment/blog-app -n ${K8S_NAMESPACE} --timeout=180s
+                    fi
+
                     minikube -p minikube kubectl -- get pods -n ${K8S_NAMESPACE}
                     minikube -p minikube kubectl -- get services -n ${K8S_NAMESPACE}
                 '''

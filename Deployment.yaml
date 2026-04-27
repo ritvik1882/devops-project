@@ -17,6 +17,8 @@ metadata:
     app: blog-app
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: blog-app
@@ -25,6 +27,7 @@ spec:
       labels:
         app: blog-app
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
         - name: blog-app
           image: blog-app-image:latest
