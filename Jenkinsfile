@@ -5,6 +5,8 @@ pipeline {
         IMAGE_NAME = 'blog-app-image'
         IMAGE_TAG = 'latest'
         KUBECONFIG = '/var/lib/jenkins/.kube/config'
+        DEPLOYMENT_FILE = '${WORKSPACE}/Deployment.yaml'
+        SERVICE_FILE = '${WORKSPACE}/Service.yaml'
     }
 
     stages {
@@ -12,6 +14,12 @@ pipeline {
             steps {
                 checkout scm
                 echo "✓ Code checked out from GitHub successfully!"
+                sh '''
+                    echo "Workspace: ${WORKSPACE}"
+                    ls -la ${WORKSPACE}
+                    test -f ${WORKSPACE}/Deployment.yaml || (echo "Deployment.yaml missing in checked out branch" && exit 1)
+                    test -f ${WORKSPACE}/Service.yaml || (echo "Service.yaml missing in checked out branch" && exit 1)
+                '''
             }
         }
 
@@ -33,12 +41,12 @@ pipeline {
                     export KUBECONFIG=/var/lib/jenkins/.kube/config
                     
                     # Apply deployment
-                    kubectl apply -f Deployment.yaml --insecure-skip-tls-verify || \
-                    kubectl apply -f Deployment.yaml
+                    kubectl apply -f ${WORKSPACE}/Deployment.yaml --insecure-skip-tls-verify || \
+                    kubectl apply -f ${WORKSPACE}/Deployment.yaml
                     
                     # Apply service
-                    kubectl apply -f Service.yaml --insecure-skip-tls-verify || \
-                    kubectl apply -f Service.yaml
+                    kubectl apply -f ${WORKSPACE}/Service.yaml --insecure-skip-tls-verify || \
+                    kubectl apply -f ${WORKSPACE}/Service.yaml
                     
                     # Wait for deployment to be ready
                     kubectl rollout status deployment/blog-app-deployment --timeout=5m --insecure-skip-tls-verify || \
