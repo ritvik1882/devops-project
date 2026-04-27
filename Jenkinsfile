@@ -9,7 +9,6 @@ pipeline {
     environment {
         IMAGE_NAME = 'blog-app-image'
         CONTAINER_NAME = 'blog-app'
-        DATA_VOLUME = 'blog-app-data'
         HOST_PORT = '5000'
         CONTAINER_PORT = '3000'
     }
@@ -37,10 +36,13 @@ pipeline {
                     docker stop ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
                 '''
+
+                // Ensure data directory exists on the host workspace
+                sh 'mkdir -p ${WORKSPACE}/data'
                 
                 // Run the new container
                 echo "Running new container on port ${HOST_PORT}..."
-                sh 'docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} -v ${DATA_VOLUME}:/app/data -e DATABASE_URL=./data/blog-sphere.sqlite -e NODE_ENV=production --name ${CONTAINER_NAME} ${IMAGE_NAME}'
+                sh 'docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} -v ${WORKSPACE}/data:/app/data -e DATABASE_URL=./data/blog-sphere.sqlite -e NODE_ENV=production --name ${CONTAINER_NAME} ${IMAGE_NAME}'
             }
         }
     }
