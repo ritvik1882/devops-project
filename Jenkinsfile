@@ -13,7 +13,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                echo "✓ Code checked out from GitHub successfully!"
+                echo "Code checked out from GitHub successfully!"
                 sh '''
                     echo "Workspace: ${WORKSPACE}"
                     ls -la ${WORKSPACE}
@@ -25,7 +25,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                echo "🐳 Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
+                echo "Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
                 sh '''
                     DOCKER_BUILDKIT=0 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                     HOME=/home/ritvik minikube -p minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
@@ -42,14 +42,10 @@ pipeline {
                     export KUBECONFIG=/home/ritvik/.kube/config
                     kubectl get nodes
                     
-                    # Apply deployment
                     kubectl apply -f ${WORKSPACE}/Deployment.yaml
-                    
-                    # Apply service
                     kubectl apply -f ${WORKSPACE}/Service.yaml
                     
-                    # Wait for deployment to be ready
-                    kubectl rollout status deployment/blog-app-deployment --timeout=5m
+                    kubectl rollout status deployment/blog-app-deployment --timeout=3m
                 '''
             }
         }
@@ -63,12 +59,10 @@ pipeline {
                     echo "== PODS =="
                     kubectl get pods -l app=blog-app
                     
-                    echo ""
-                    echo "========== SERVICE =========="
+                    echo "\n== SERVICE =="
                     kubectl get service blog-app-service
                     
-                    echo ""
-                    echo "========== DEPLOYMENT =========="
+                    echo "\n== DEPLOYMENT =="
                     kubectl get deployment blog-app-deployment
                 '''
             }
@@ -79,19 +73,11 @@ pipeline {
         success {
             sh '''
                 export KUBECONFIG=/home/ritvik/.kube/config
-                echo "✓ Pipeline completed successfully!"
-                echo ""
-                echo "========== ACCESS YOUR APPLICATION =========="
-                echo "NodePort: http://$(minikube ip):30000"
-                echo ""
-                echo "Run these commands to verify:"
-                echo "  kubectl get pods"
-                echo "  kubectl get service"
-                echo "  minikube service blog-app-service"
+                echo "Pipeline completed successfully!"
             '''
         }
         failure {
-            echo "❌ Pipeline failed. Check the logs above for details."
+            echo "Pipeline failed."
         }
     }
 }

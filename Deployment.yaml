@@ -28,7 +28,7 @@ spec:
           name: http
         env:
         - name: DATABASE_URL
-          value: "./data/blog-sphere.sqlite"
+          value: "/app/data/blog-sphere.sqlite"
         - name: NODE_ENV
           value: "production"
         resources:
@@ -55,4 +55,5 @@ spec:
           mountPath: /app/data
       volumes:
       - name: data-storage
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: blog-app-pvc
