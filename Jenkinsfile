@@ -6,6 +6,10 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         IMAGE_NAME = 'blog-app-image'
         IMAGE_TAG = "${BUILD_NUMBER}"
@@ -20,13 +24,22 @@ pipeline {
             }
         }
 
-        stage('Docker Build (Minikube Docker Daemon)') {
+        stage('Minikube Preflight') {
             steps {
-                echo "Building Docker image in Minikube Docker daemon..."
+                echo "Checking Minikube status and Kubernetes access..."
                 sh '''
-                    eval $(minikube -p minikube docker-env)
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .
-                    docker images | grep ${IMAGE_NAME}
+                    minikube -p minikube status
+                    minikube -p minikube kubectl -- get nodes
+                '''
+            }
+        }
+
+        stage('Docker Build (Minikube Image Build)') {
+            steps {
+                echo "Building Docker image directly in Minikube..."
+                sh '''
+                    minikube -p minikube image build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .
+                    minikube -p minikube image ls | grep ${IMAGE_NAME}
                 '''
             }
         }
@@ -35,8 +48,8 @@ pipeline {
             steps {
                 echo "Applying Kubernetes manifests..."
                 sh '''
-                    kubectl apply -f Deployment.yaml -n ${K8S_NAMESPACE}
-                    kubectl apply -f Service.yaml -n ${K8S_NAMESPACE}
+                    minikube -p minikube kubectl -- apply -f Deployment.yaml -n ${K8S_NAMESPACE}
+                    minikube -p minikube kubectl -- apply -f Service.yaml -n ${K8S_NAMESPACE}
                 '''
             }
         }
@@ -45,10 +58,10 @@ pipeline {
             steps {
                 echo "Updating deployment image and verifying rollout..."
                 sh '''
-                    kubectl set image deployment/blog-app blog-app=${IMAGE_NAME}:${IMAGE_TAG} -n ${K8S_NAMESPACE}
-                    kubectl rollout status deployment/blog-app -n ${K8S_NAMESPACE} --timeout=180s
-                    kubectl get pods -n ${K8S_NAMESPACE}
-                    kubectl get services -n ${K8S_NAMESPACE}
+                    minikube -p minikube kubectl -- set image deployment/blog-app blog-app=${IMAGE_NAME}:${IMAGE_TAG} -n ${K8S_NAMESPACE}
+                    minikube -p minikube kubectl -- rollout status deployment/blog-app -n ${K8S_NAMESPACE} --timeout=180s
+                    minikube -p minikube kubectl -- get pods -n ${K8S_NAMESPACE}
+                    minikube -p minikube kubectl -- get services -n ${K8S_NAMESPACE}
                 '''
             }
         }
