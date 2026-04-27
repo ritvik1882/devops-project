@@ -19,8 +19,8 @@ pipeline {
             steps {
                 echo "🐳 Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}..."
                 sh '''
-                    eval $(minikube docker-env) || true
                     docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
                     echo "✓ Docker image built successfully"
                 '''
             }
