@@ -5,9 +5,12 @@ RUN apk add --no-cache libc6-compat python3 make g++
 
 WORKDIR /app
 
+COPY package*.json ./
+
+RUN npm ci
+
 COPY . .
 
-RUN npm install
 RUN npm run build
 
 EXPOSE 3000
